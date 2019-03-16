@@ -1,41 +1,64 @@
+#ifndef LARGHEZZE_H_INCLUDED
+#define LARGHEZZE_H_INCLUDED
+
 #include <stdlib.h>
-#include <stdio.h>
+#include <stdint.h>
 
 /* La tolleranza è alta per provare ad eliminare le imperfezioni rilevate dal laser
  * funziona in modo abbastanza efficiente sia per 2 spessori (39) che per 4 (128 ed EAN13)
 */
 #define tolleranza 0.70
 
-short int approssima(short int a, short int b){
+short int approssima(uint16_t a, uint16_t b){
 	return (a/b) + (a/(double)b > (a/b) + tolleranza); 
 }
 
-struct larg{
-	short int l;
-	short int ind;
-};
+typedef struct{
+    uint16_t l;
+	uint8_t ind;
+}larg;
 
 int compare(const void* a, const void* b){
-	struct larg* as = (struct larg*) a;
-	struct larg* bs = (struct larg*) b;
+	larg* as = (larg*) a;
+	larg* bs = (larg*) b;
 	return as->l - bs->l;
 }
 
-void aggiustaLarghezze(short int larghezze[], short int N){
+
+/*
+void aggiustaLarghezze(uint16_t* larghezze, unsigned int N){
+  uint16_t modulo = WINT_MAX;
+  for(int i=0;i<N;i++){
+    if(larghezze[i] <= 0){
+        *larghezze = 0;
+        return;
+    }
+    if(larghezze[i] < modulo)
+        modulo = larghezze[i];
+  }
+  
+  for(int i=0;i<N;i++)
+    larghezze[i] = approssima(larghezze[i], modulo);
+  
+}
+*/
+
+void aggiustaLarghezze(uint16_t* larghezze, unsigned int N){
 	
-	struct larg larghezzeTemp[N+1];
+	larg* larghezzeTemp = (larg*) malloc(sizeof(larg) * N+1);
 	for(int i=0;i<=N;i++){
 		larghezzeTemp[i].l = larghezze[i];
 		larghezzeTemp[i].ind = i;
 	}
-	qsort(larghezzeTemp, N+1, sizeof(struct larg), compare);
+	qsort(larghezzeTemp, N+1, sizeof(larg), compare);
 	larghezze[larghezzeTemp[0].ind] = 1;
 	
-	short int media=larghezzeTemp[0].l;
-	short int att=0;
+	uint16_t media=larghezzeTemp[0].l;
+	uint16_t att=0;
 	
-	if(!media){
+	if(media <= 0){
 		larghezze[0] = 0;
+		free(larghezzeTemp);
 		return;
 	}
 	
@@ -57,11 +80,15 @@ void aggiustaLarghezze(short int larghezze[], short int N){
 	for(int k=att;k<=N;k++)
 		larghezze[larghezzeTemp[k].ind] = media;
 	
-	short int modulo = larghezze[0];
+	uint16_t modulo = larghezze[0];
 	
 	for(int i=1;i<=N;i++)
 		if(larghezze[i] < modulo)	modulo = larghezze[i];
 	
 	for(int i=0;i<=N;i++)
 		larghezze[i] = approssima(larghezze[i], modulo);
+	
+	free(larghezzeTemp);
 }
+
+#endif

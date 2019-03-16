@@ -1,8 +1,13 @@
+#ifndef CODIFICHE_H_INCLUDED
+#define CODIFICHE_H_INCLUDED
+
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 //Codice ascii, Codifica in decimale
-const short int codice39[44][2] = {
+const uint16_t codice39[44][2] = {
 {49, 289},
 {50, 97},
 {51, 352},
@@ -49,6 +54,7 @@ const short int codice39[44][2] = {
 {37, 42},
 };
 
+/*
 // {A, B, C, Codifica}
 const int codice128[107][4] = {
 {32,32,0,212222},
@@ -159,10 +165,15 @@ const int codice128[107][4] = {
 {-23,-23,-23,211232},	//Start C
 {-20,-20,-20,2331112}	//Stop
 };
+*/
 
 /*
  A,       B,       C
 */
+
+/*
+* REPLACED WITH SWITCH-CASE TO SAVE MEMORY
+
 const int codiceEAN13[10][3] = {
 {1112212, 1211222, 2221121},
 {1122112, 1221122, 2211221},
@@ -175,42 +186,150 @@ const int codiceEAN13[10][3] = {
 {1221222, 1112112, 2112111},
 {1112122, 1121222, 2221211},
 };
+*/
 
-const char* getValEAN(int codice){
-	char* ans = (char*) malloc(sizeof(char) * 2);
-	if(codice == 212){
-		*ans = -5;
-		ans[1] = -5;
-		return ans;
-	}
-	if(codice == 12121){
-		*ans = -6;
-		ans[1] = -6;
-		return ans;
-	}
-	for(int i=0;i<10;i++){
-		if(codiceEAN13[i][0] == codice){
-			*ans = i;
-			*(ans+1) = 'A';
+short* getValEAN(int codice){
+	short* ans = (short*) malloc(sizeof(short) * 2);
+
+	switch(codice){
+		case 212:
+			*ans = -5;
+			ans[1] = -5;
 			return ans;
-		}
-		if(codiceEAN13[i][1] == codice){
-			*ans = i;
-			*(ans+1) = 'B';
+		case 12121:
+			*ans = -6;
+			ans[1] = -6;
 			return ans;
-		}
-		if(codiceEAN13[i][2] == codice){
-			*ans = i;
-			*(ans+1) = 'C';
+		case 1112212:
+			*ans = 0;
+			ans[1] = 'A';
 			return ans;
-		}
+		case 1211222:
+			*ans = 0;
+			ans[1] = 'B';
+			return ans;
+		case 2221121:
+			*ans = 0;
+			ans[1] = 'C';
+			return ans;
+		case 1122112:
+			*ans = 1;
+			ans[1] = 'A';
+			return ans;
+		case 1221122:
+			*ans = 1;
+			ans[1] = 'B';
+			return ans;
+			break;
+		case 2211221:
+			*ans = 1;
+			ans[1] = 'C';
+			return ans;
+		case 1121122:
+			*ans = 2;
+			ans[1] = 'A';
+			return ans;
+		case 1122122:
+			*ans = 2;
+			ans[1] = 'B';
+			return ans;
+		case 2212211:
+			*ans = 2;
+			ans[1] = 'C';
+			return ans;
+		case 1222212:
+			*ans = 3;
+			ans[1] = 'A';
+			return ans;
+		case 1211112:
+			*ans = 3;
+			ans[1] = 'B';
+			return ans;
+		case 2111121:
+			*ans = 3;
+			ans[1] = 'C';
+			return ans;
+		case 1211122:
+			*ans = 4;
+			ans[1] = 'A';
+			return ans;
+		case 1122212:
+			*ans = 4;
+			ans[1] = 'B';
+			return ans;
+		case 2122211:
+			*ans = 4;
+			ans[1] = 'C';
+			return ans;
+		case 1221112:
+			*ans = 5;
+			ans[1] = 'A';
+			return ans;
+		case 1222112:
+			*ans = 5;
+			ans[1] = 'B';
+			return ans;
+		case 2112221:
+			*ans = 5;
+			ans[1] = 'C';
+			return ans;
+		case 1212222:
+			*ans = 6;
+			ans[1] = 'A';
+			return ans;
+		case 1111212:
+			*ans = 6;
+			ans[1] = 'B';
+			return ans;
+		case 2121111:
+			*ans = 6;
+			ans[1] = 'C';
+			return ans;
+		case 1222122:
+			*ans = 7;
+			ans[1] = 'A';
+			return ans;
+		case 1121112:
+			*ans = 7;
+			ans[1] = 'B';
+			return ans;
+		case 2111211:
+			*ans = 7;
+			ans[1] = 'C';
+			return ans;
+		case 1221222:
+			*ans = 8;
+			ans[1] = 'A';
+			return ans;
+		case 1112112:
+			*ans = 8;
+			ans[1] = 'B';
+			return ans;
+		case 2112111:
+			*ans = 8;
+			ans[1] = 'C';
+			return ans;
+		case 1112122:
+			*ans = 9;
+			ans[1] = 'A';
+			return ans;
+		case 1121222:
+			*ans = 9;
+			ans[1] = 'B';
+			return ans;
+		case 2221211:
+			*ans = 9;
+			ans[1] = 'C';
+			return ans;
+		default:
+			*ans = -1;
+			ans[1] = -1;
+			return ans;
 	}
-	*ans = -1;
-	ans[1] = -1;
-	return ans;
 }
 
-const int* getVal128(short int larghezze[], int i, int j, char mode){
+/*
+int* getVal128(uint16_t* larghezze, int i, int j, char mode){
 	int codice = 0;
 	int p=1;
 	for(; j>=i; j--, p*=10)
@@ -228,8 +347,9 @@ const int* getVal128(short int larghezze[], int i, int j, char mode){
 	result[1] = -99;
 	return result;
 }
+*/
 
-int getVal39(bool bits[], int i, int j){
+short getVal39(bool bits[], int i, int j){
 	short int p = 1;
 	int ans = 0;
 	for(;j>=i;j--, p*=2)
@@ -241,3 +361,4 @@ int getVal39(bool bits[], int i, int j){
 	}
 	return -1;
 }
+#endif          //CODIFICHE_H_INCLUDED

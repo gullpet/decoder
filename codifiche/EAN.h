@@ -1,27 +1,13 @@
+#ifndef EAN_H_INCLUDED
+#define EAN_H_INCLUDED
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <stdio.h>
 
-#ifndef CODIFICHE_H
-#define CODIFICHE_H
 #include "codifiche.h"
-#endif
 
-const char codificheEAN13[10][13] = {
-	"AAAAAACCCCCC\0",
-	"AABABBCCCCCC\0",
-	"AABBABCCCCCC\0",
-	"AABBBACCCCCC\0",
-	"ABAABBCCCCCC\0",
-	"ABBAABCCCCCC\0",
-	"ABBBAACCCCCC\0",
-	"ABABABCCCCCC\0",
-	"ABABBACCCCCC\0",
-	"ABBABACCCCCC\0",
-};
-
-const char* toInt(short int partenza, short int fine, bool bits[]){
+short* toInt(short int partenza, short int fine, bool bits[]){
 	int res = ((int)bits[partenza])+1;
 	for(int i=partenza+1; i<=fine; i++){
 		res *= 10;
@@ -30,75 +16,100 @@ const char* toInt(short int partenza, short int fine, bool bits[]){
 	return getValEAN(res);
 }
 
-const char* provaEAN13(bool bits[]);
+unsigned char* provaEAN13(bool bits[]);
 
-const char* decodeEAN13(short int larghezze[], short int N){
-	short int nElem = 0;
+unsigned char* decodeEAN13(uint16_t larghezze[], short int N){
+	unsigned int nElem = 0;
 	for(int i=0;i<=N;i++)
 		nElem += larghezze[i];
 
 	if(nElem != 95)
-		return "\0";
+		return NULL;
 	
-	bool bits[nElem];
-	bool bitsReverse[nElem];
+	bool bits[95];
 	
-	short int cont = 0;
+	unsigned short cont = 0;
 	bool stato_att = 1;
 	for(int i=0;i<=N;i++){
 		for(int j=0;j<larghezze[i];j++){
 			bits[cont] = stato_att;
-			bitsReverse[nElem-cont-1] = stato_att;
 			cont++;
 		}
 		stato_att = !stato_att;
 	}
 	
-	const char* result = provaEAN13(bits);
-	if(*result != '\0')	return result;
-	return provaEAN13(bitsReverse);
+	unsigned char* result = provaEAN13(bits);
+	
+	if(result != NULL)	return result;
+	
+	cont = 0;
+	stato_att = 1;
+	for(int i=0;i<=N;i++){
+		for(int j=0;j<larghezze[i];j++){
+			bits[95-cont-1] = stato_att;
+			cont++;
+		}
+		stato_att = !stato_att;
+	}
+
+	return provaEAN13(bits);
 	
 }
 
-const char* provaEAN13(bool bits[]){
-	char* result = (char*) malloc(sizeof(char) * 13);
-	char* mode = (char*) malloc(sizeof(char) * 12);
+unsigned char* provaEAN13(bool bits[]){
+	unsigned char* result = (unsigned char*) malloc(sizeof(unsigned char*) * 14);
+	unsigned char mode[13];
 	
 	///////////// controllo di start
 	{			 
-		const char* leper = toInt(0, 2, bits);
-		if(*leper != -5)
-			return "\0";
+		short* temp = toInt(0, 2, bits);
+		if(*temp != -5){
+			free(result);
+			free(temp);
+			return NULL;
+		}
+		free(temp);
 	}			 
 	/////////////
 				 
 	short int c = 1;
 	for(int j=3;j<45;j+=7){
-		const char* leper = toInt(j, j+6, bits);
-		if(*leper == -5)
-			return "\0";
+		short* temp = toInt(j, j+6, bits);
+		if(*temp < 0 || temp[1] < 0){
+			free(result);
+			free(temp);
+			return NULL;
+		}
 				 
-		result[c] = leper[0] + 48;
-		mode[c-1] = leper[1];
-		c++;	 
+		result[c] = temp[0] + 48;
+		mode[c-1] = temp[1];
+		c++;
+		free(temp);
 	}			 
 				 
 	/////////////
 	{
-		const char* leper = toInt(45, 49, bits);
-		if(*leper != -6)
-			return "\0";
+		short* temp = toInt(45, 49, bits);
+		if(*temp != -6){
+			free(result);
+			free(temp);
+			return NULL;
+		}
+		free(temp);
 	}
 	/////////////
 				 	
 	for(int j=50;j<92;j+=7){
-		const char* leper = toInt(j, j+6, bits);
-		if(*leper == -5)
-			return "\0";
-				 
-		result[c] = leper[0] + 48;
-		mode[c-1] = leper[1];
-		c++;	 
+		short* temp = toInt(j, j+6, bits);
+		if(*temp < 0 || temp[1] < 0){
+			free(result);
+			free(temp);
+			return NULL;
+		}
+		result[c] = temp[0] + 48;
+		mode[c-1] = temp[1];
+		c++;
+		free(temp);
 	}			 
 				 
 	result[c] = '\0';
@@ -107,17 +118,60 @@ const char* provaEAN13(bool bits[]){
 	
 	/////////////
 	{
-		const char* leper = toInt(92, 94, bits);
-		if(*leper != -5)
-			return "\0";
+		short* tmp = toInt(92, 94, bits);
+		if(*tmp != -5){
+			free(result);
+			free(tmp);
+			return NULL;
+		}
+		free(tmp);
 	}
 	/////////////
 	
-	for(int i=0;i<10;i++){
-		if(strcmp(codificheEAN13[i], mode) == 0){
-			*result = i + 48;
-			return result;
-		}
+	//controllo della prima cifra
+	if(strcmp("AAAAAACCCCCC", (const char*)mode) == 0){
+		*result = '0';
+		return result;
 	}
-	return "\0";
+	else if(strcmp("AABABBCCCCCC", (const char*)mode) == 0){
+		*result = '1';
+		return result;
+	}
+	else if(strcmp("AABBABCCCCCC", (const char*)mode) == 0){
+		*result = '2';
+		return result;
+	}
+	else if(strcmp("AABBBACCCCCC", (const char*)mode) == 0){
+		*result = '3';
+		return result;
+	}
+	else if(strcmp("ABAABBCCCCCC", (const char*)mode) == 0){
+		*result = '4';
+		return result;
+	}
+	else if(strcmp("ABBAABCCCCCC", (const char*)mode) == 0){
+		*result = '5';
+		return result;
+	}
+	else if(strcmp("ABBBAACCCCCC", (const char*)mode) == 0){
+		*result = '6';
+		return result;
+	}
+	else if(strcmp("ABABABCCCCCC", (const char*)mode) == 0){
+		*result = '7';
+		return result;
+	}
+	else if(strcmp("ABABBACCCCCC", (const char*)mode) == 0){
+		*result = '8';
+		return result;
+	}
+	else if(strcmp("ABBABACCCCCC", (const char*)mode) == 0){
+		*result = '9';
+		return result;
+	}
+	else{
+		free(result);
+		return NULL;
+	}
 }
+#endif       //EAN_H_INCLUDED
